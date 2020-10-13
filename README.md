@@ -1,6 +1,8 @@
 # BallMaze
 This project implements a path planning algorithm for a car-like robot that travels through a maze.
+
 Baranov Vladimir (vsbaranov83@gmail.com)
+
 for Unity 2019.3.11f1
 
 RRT path planning algorithm.
