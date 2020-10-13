@@ -1,0 +1,10 @@
+﻿  dsp.cpp
+h:\unity projects\car_model\testdll\dsp.cpp(64): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\car_model\testdll\dsp.cpp(65): warning C4305: инициализация: усечение из "double" в "float"
+h:\unity projects\car_model\testdll\dsp.cpp(95): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\car_model\testdll\dsp.cpp(84): warning C4101: No: неиспользованная локальная переменная
+h:\unity projects\car_model\testdll\dsp.cpp(84): warning C4101: steps: неиспользованная локальная переменная
+h:\unity projects\car_model\testdll\dsp.cpp(292): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+h:\unity projects\car_model\testdll\dsp.cpp(352): warning C4101: str: неиспользованная локальная переменная
+     ╤ючфрхЄё  сшсышюЄхър H:\Unity Projects\car_model\TestCPPApp\Debug\TestDLL.lib ш юс·хъЄ H:\Unity Projects\car_model\TestCPPApp\Debug\TestDLL.exp
+  TestDLL.vcxproj -> H:\Unity Projects\car_model\TestCPPApp\Debug\TestDLL.dll

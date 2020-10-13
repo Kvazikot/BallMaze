@@ -1,0 +1,34 @@
+﻿  Distribution.cpp
+h:\unity projects\ballmaze\testdll\distribution.cpp(37): warning C4190: для "circle_sample" задана С-компоновка, но возвращаемый тип UDT "Vector2" несовместим с языком Си
+  h:\unity projects\ballmaze\testdll\distribution.cpp(22): note:  см. объявление "Vector2"
+h:\unity projects\ballmaze\testdll\distribution.cpp(71): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(72): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(100): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(101): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(110): warning C4190: для "fromPixelsToWorld" задана С-компоновка, но возвращаемый тип UDT "Vector2" несовместим с языком Си
+  h:\unity projects\ballmaze\testdll\distribution.cpp(22): note:  см. объявление "Vector2"
+h:\unity projects\ballmaze\testdll\distribution.cpp(134): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(172): warning C4267: аргумент: преобразование из "size_t" в "_Ty"; возможна потеря данных
+          with
+          [
+              _Ty=int
+          ]
+h:\unity projects\ballmaze\testdll\distribution.cpp(197): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(197): warning C4838: преобразование из "int" в "_Ty" требует сужающего преобразования
+          with
+          [
+              _Ty=double
+          ]
+h:\unity projects\ballmaze\testdll\distribution.cpp(198): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(198): warning C4838: преобразование из "int" в "_Ty" требует сужающего преобразования
+          with
+          [
+              _Ty=double
+          ]
+h:\unity projects\ballmaze\testdll\distribution.cpp(211): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(212): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+h:\unity projects\ballmaze\testdll\distribution.cpp(216): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+  TestDLLSort.cpp
+  Создание кода...
+     Создается библиотека H:\Unity Projects\BallMaze\TestDLL\x64\Debug\TestDLL.lib и объект H:\Unity Projects\BallMaze\TestDLL\x64\Debug\TestDLL.exp
+  TestDLL.vcxproj -> H:\Unity Projects\BallMaze\TestDLL\x64\Debug\TestDLL.dll
