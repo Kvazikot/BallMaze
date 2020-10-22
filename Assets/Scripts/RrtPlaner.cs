@@ -709,6 +709,7 @@ public class RrtPlaner : MonoBehaviour
         //---------- TREE RENDERING
         if (wps.Count == 2)
         {
+            
             StartP = wps[0].transform.position;
             EndP = wps[1].transform.position;
             Debug.DrawLine(StartP, EndP);
