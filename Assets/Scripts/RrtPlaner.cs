@@ -9,6 +9,7 @@ using System.IO;
 // native function with piecewise_linear_distribution
 // generates coordinates with bias towards EndP
 delegate int GenerateCoordinates(float[] Xs, float[] Ys, int len, float xmin, float xmax, float ymin, float ymax);
+delegate int GenerateCoordinatesDist(float[] Xs, float[] Ys,int[] Colors, int n_points, int[] distImage, int image_size, int maze_size);
 
 public struct InputVec
 {
@@ -486,14 +487,19 @@ public class RRTree
     public float Build(IntPtr nativeLibraryPtr)
     {
         //generate random points biased towards endP
+       // int[] Colors = new int[K + 1];
+       // int ret = Native.Invoke<int, GenerateCoordinatesDist>(nativeLibraryPtr, Xs, Zs, Colors, K, DistanceImage.pixelsint, DistanceImage.width, 64);
+       //  Debug.Log("ret = " + ret);
         int ret = Native.Invoke<int, GenerateCoordinates>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
         Debug.Log("ret = " + ret);
+
 
         float shortestDist = float.MaxValue;
         init(startP);
         for (k = 0; k < K; k++)
         {
             Vector3 xrand = random_state(true);
+         
             //float distThreshold = 0.1f;
             //if (DistanceImage.getDistance(xrand) < distThreshold)
             //    continue;
@@ -522,7 +528,24 @@ public class RRTree
         return new Vertex();
     }
 
-    public const int K = 50000;
+    GameObject CreateSpherePrimitive(Vector3 position, Vector3 scale, string name, Color color)
+    {
+        //create a copy of start waypoint to supress coliders
+        GameObject S = GameObject.Find("S");//GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        GameObject sphere = UnityEngine.Object.Instantiate(S, position, Quaternion.identity);
+        GameObject waypoints = GameObject.Find("Waypoints");
+        sphere.transform.parent = waypoints.transform;
+        //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.transform.position = position;
+        sphere.transform.localScale = scale;
+        //sphere.transform.parent = GetComponent<Transform>();
+        sphere.transform.name = name;
+        var renderer = sphere.GetComponent<MeshRenderer>();
+        renderer.material.SetColor("_Color", color);
+
+        return sphere;
+    }
+    public const int K = 100000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
     const float GOAL_THRESHOLD = 2F;
@@ -544,7 +567,7 @@ public class RrtPlaner : MonoBehaviour
     void Start()
     {
         if (nativeLibraryPtr != IntPtr.Zero) return;
-        nativeLibraryPtr = Native.LoadLibrary(Directory.GetCurrentDirectory() + "\\TestCPPApp\\x64\\Debug\\TestDLL.dll");
+        nativeLibraryPtr = Native.LoadLibrary(Directory.GetCurrentDirectory() + "\\TestDLL\\x64\\Debug\\TestDLL.dll");
         if (nativeLibraryPtr == IntPtr.Zero)
         {
             Debug.LogError("Failed to load native library " + Directory.GetCurrentDirectory());
@@ -643,15 +666,18 @@ public class RrtPlaner : MonoBehaviour
   
     void TestCoordinates(int numberPoints, Vector3 startP, Vector3 endP)
     {
+        numberPoints = 10000;
         Debug.Log($"numberPoints = {numberPoints} "); 
         float[] Xs = new float[numberPoints+1];
         float[] Zs = new float[numberPoints+1];
-        int ret = Native.Invoke<int, GenerateCoordinates>(nativeLibraryPtr, Xs, Zs, numberPoints, startP.x, endP.x, startP.z, endP.z);
-        Debug.Log("ret = " + ret);
+        int[] Colors = new int[numberPoints + 1];
+        int ret = Native.Invoke<int, GenerateCoordinatesDist>(nativeLibraryPtr, Xs, Zs, Colors, numberPoints, DistanceImage.pixelsint, DistanceImage.width, 64);
+        Debug.Log("GenerateCoordinatesDist ret = " + ret);
         for (int i = 0; i < numberPoints; i++)
         {
             //Debug.Log($"X = {Xs[i]} Z = {Zs[i]}");
-            CreateSpherePrimitive(new Vector3(Xs[i], 1, Zs[i]), sphere_scale, $"node {i}", Color.cyan);
+            CreateSpherePrimitive(new Vector3(Xs[i], 1, Zs[i]), sphere_scale, $"node {i}", new Color(1 - (float)Colors[i] / Mathf.Sqrt(256*256),0,0));
+       
         }
     }
 
@@ -667,7 +693,7 @@ public class RrtPlaner : MonoBehaviour
         //foreach (Vertex v in rrt.vertexes)
         //    if(v.parent == null)
         //      CreateSpherePrimitive(v.value, sphere_scale, $"node {i++}", Color.cyan);
-        //TestCoordinates(1000, StartP.transform.position, EndP.transform.position);
+        
         // render the shortest path
         Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
                                          //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
@@ -713,6 +739,7 @@ public class RrtPlaner : MonoBehaviour
 
         if (maze.bMazeGenerated && n_frame == 120)
         {
+            //TestCoordinates(1000, StartP, EndP);
             FindShortestPath();
                            
         }
