@@ -667,6 +667,25 @@ public class MazeGen : MonoBehaviour
 
     }
 
+    public void RegenerateMaze()
+    {
+
+        bMazeGenerated = false;
+        mesh_filter = GetComponent<MeshFilter>();
+        waypoints = GameObject.Find("Waypoints");
+
+        wall_height = 2;
+
+        RunTests();
+
+        DrawCells();
+
+       
+        bMazeGenerated = true;
+
+
+    }
+   
    
 
     // Update is called once per frame

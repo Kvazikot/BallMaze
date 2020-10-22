@@ -213,7 +213,7 @@ class KinematicModel
             xnew.y = 0.1F;
             edges.Add(new Edge(new Vertex(x), new Vertex(xnew), input.steering));
             t += dt;
-            Debug.Log($"t={t} input.steering={input.steering} theta={output.theta} x={output.x} z={output.z}");
+            //Debug.Log($"t={t} input.steering={input.steering} theta={output.theta} x={output.x} z={output.z}");
         }
 
 
@@ -226,11 +226,11 @@ class KinematicModel
     public void TestInterpolateSteering()
     {
         SteeringLaw steering_law = new SteeringLaw(-30, 30,  100 * Time.deltaTime);
-        Debug.Log($"Test Interpolate Steering!");
+        //Debug.Log($"Test Interpolate Steering!");
         for (float k = 0; k < 1000; k++)
         {
             float t = k * Time.deltaTime;
-            Debug.Log($"k={k} t={t} steering={steering_law.getSample(Time.deltaTime)}");
+            //Debug.Log($"k={k} t={t} steering={steering_law.getSample(Time.deltaTime)}");
         }
     }
 
@@ -733,9 +733,6 @@ public class RrtPlaner : MonoBehaviour
         if (wps.Count >= 2)
         {
             
-            StartP = wps[0].transform.position;
-            EndP = wps[1].transform.position;
-            Debug.DrawLine(StartP, EndP);
             if (rrt == null) return;
             // render RRT edges as lines
             // foreach (Vector3 v in rrt.vertexes)
