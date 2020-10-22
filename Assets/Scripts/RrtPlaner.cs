@@ -309,10 +309,12 @@ public class RRTree
 
     Vertex nearest_neighbour(Vector3 x)
     {
+
         Vertex xnear = new Vertex();
         float minDistance = float.MaxValue;
         foreach (Vertex v in vertexes)
         {
+         
             Vector3 d = x - v.value;
             minDistance = Mathf.Min(minDistance, d.sqrMagnitude);
             if (minDistance == d.sqrMagnitude)
@@ -492,8 +494,11 @@ public class RRTree
         for (k = 0; k < K; k++)
         {
             Vector3 xrand = random_state(true);
+            //float distThreshold = 0.1f;
+            //if (DistanceImage.getDistance(xrand) < distThreshold)
+            //    continue;
             //Debug.Log("xrand=" + xrand.ToString());
-            if( Extend(xrand) ==  GoalState.REACHED )
+            if ( Extend(xrand) ==  GoalState.REACHED )
             {
                 Vertex lastVertex = vertexes[vertexes.Count - 1];
                 shortestDist = Mathf.Min(shortestDist, lastVertex.dist);
@@ -517,7 +522,7 @@ public class RRTree
         return new Vertex();
     }
 
-    public const int K = 10000;
+    public const int K = 50000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
     const float GOAL_THRESHOLD = 2F;
@@ -531,7 +536,7 @@ public class RrtPlaner : MonoBehaviour
     public Vector3 EndP;
     public List<Component> wps;
     public RRTree rrt = null;
-    static Vector3 sphere_scale = new Vector3(0.3F, 0.3F, 0.3F);
+    static Vector3 sphere_scale = new Vector3(3F, 3F, 3F);
     public const int n_waypoints = 20;
     static IntPtr nativeLibraryPtr;
 
@@ -559,6 +564,8 @@ public class RrtPlaner : MonoBehaviour
         //create a copy of start waypoint to supress coliders
         GameObject S = GameObject.Find("S");//GameObject.CreatePrimitive(PrimitiveType.Sphere);
         GameObject sphere = UnityEngine.Object.Instantiate(S, position, Quaternion.identity);
+        GameObject waypoints = GameObject.Find("Waypoints");
+        sphere.transform.parent = waypoints.transform;
         //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         sphere.transform.position = position;
         sphere.transform.localScale = scale;
@@ -648,38 +655,28 @@ public class RrtPlaner : MonoBehaviour
         }
     }
 
-
-
-    // Update is called once per frame
-    void FixedUpdate()
+   void FindShortestPath()
     {
         float shortestPathDist = 0;
-        //check that maze is generated
-        GameObject ground = GameObject.Find("Plane");
-        MazeGen maze = ground.GetComponent<MazeGen>();
-        n_frame++;
+        rrt = new RRTree(StartP, EndP);
+        shortestPathDist = rrt.Build(nativeLibraryPtr);
+         KinematicModel model = new KinematicModel();
+        //model.TestKinematicModel(StartP.transform.position, ref rrt.edges);
+        //create nodes of a RRT as spheres
+        int i = 0;
+        //foreach (Vertex v in rrt.vertexes)
+        //    if(v.parent == null)
+        //      CreateSpherePrimitive(v.value, sphere_scale, $"node {i++}", Color.cyan);
+        //TestCoordinates(1000, StartP.transform.position, EndP.transform.position);
+        // render the shortest path
+        Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
+                                         //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
+        int max_iters = RRTree.K;
+        // insert sphere every 1/20 part of the path
 
-        if (maze.bMazeGenerated && n_frame == 120)
-        {
-            rrt = new RRTree(StartP, EndP);
-            shortestPathDist = rrt.Build(nativeLibraryPtr);
-            KinematicModel model = new KinematicModel();
-            //model.TestKinematicModel(StartP.transform.position, ref rrt.edges);
-            //create nodes of a RRT as spheres
-            int i = 0;
-            //foreach (Vertex v in rrt.vertexes)
-            //    if(v.parent == null)
-            //      CreateSpherePrimitive(v.value, sphere_scale, $"node {i++}", Color.cyan);
-            //TestCoordinates(1000, StartP.transform.position, EndP.transform.position);
-            // render the shortest path
-            Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
-            //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
-            int max_iters = RRTree.K;
-            // insert sphere every 1/20 part of the path
-        
-            float interval_dist = shortestPathDist / n_waypoints;
-            float d = 0;
-            int idx = 0;
+        float interval_dist = shortestPathDist / n_waypoints;
+        float d = 0;
+        int idx = 0;
 
             while (v != null)
             {
@@ -689,20 +686,34 @@ public class RrtPlaner : MonoBehaviour
                 {
                     Vector3 pos = v.value;
                     pos.y = 10;
-                    AddWaypoint(v.value, idx, Color.green);
-                    d = 0;
+                    AddWaypoint(v.value, idx, Color.red);
+                    d = 0; idx++;
+
                 }
                 v = v.parent;
-                idx++;
-
-
+                
 
             }
 
-            // reindex waypoints
-            int idx2 = wps.Count;
-            foreach (Component wp in wps)
-                wp.name = $"waypoint_{idx2--}";
+                // reindex waypoints
+                int idx2 = wps.Count;
+                foreach (Component wp in wps)
+                    wp.name = $"waypoint_{idx2--}";
+    }
+
+
+    // Update is called once per frame
+    void FixedUpdate()
+    {
+
+        //check that maze is generated
+        GameObject ground = GameObject.Find("Plane");
+        MazeGen maze = ground.GetComponent<MazeGen>();
+        n_frame++;
+
+        if (maze.bMazeGenerated && n_frame == 120)
+        {
+            FindShortestPath();
                            
         }
 
