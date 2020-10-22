@@ -562,7 +562,7 @@ public class RrtPlaner : MonoBehaviour
     Vector3 EndP;
     public List<Component> wps;
     public RRTree rrt = null;
-    static Vector3 sphere_scale = new Vector3(3F, 3F, 3F);
+    static Vector3 sphere_scale = new Vector3(1F, 1F, 1F);
     public const int n_waypoints = 20;
     static IntPtr nativeLibraryPtr;
 

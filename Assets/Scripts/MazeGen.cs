@@ -417,7 +417,7 @@ public class MazeGen : MonoBehaviour
         if (waypoints != null)
             sphere.transform.parent = waypoints.transform;
         sphere.transform.position = position;
-        sphere.transform.localScale = new Vector3(2,2,2);
+        sphere.transform.localScale = new Vector3(1,1,1);
         sphere.transform.rotation = Quaternion.AngleAxis(UnityEngine.Random.RandomRange(0, 0.1F), Vector3.up);
         //sphere.transform.parent = mesh_filter.transform;
         sphere.transform.name = name;
@@ -454,8 +454,7 @@ public class MazeGen : MonoBehaviour
                     float offseZ = maze_size / 2;
                     Vector3 C = new Vector3(i * cell_size - offseX, 0, (j+1)  * cell_size - offseZ);
                     Vector3 C2 = new Vector3(i * cell_size - offseX + wall_width/2, 0, (j ) * cell_size - offseZ - wall_width/2);
-                    if( bGenerateWaypoints )
-                      CreateSpherePrimitive(C2+new Vector3(cell_size/2, 0.5f, cell_size/2), "waypoint " + Convert.ToString(j * cellsX + i), Color.red);
+
                     if (cell.leftWall.bVisible)
                     {
                         Vector3 position = new Vector3(C.x + wall_width / 2, 0, C.z - cell_size / 2);
@@ -687,7 +686,6 @@ public class MazeGen : MonoBehaviour
     public static float wall_height;
     public static float size;
     public bool bMazeGenerated = false;
-    public bool bGenerateWaypoints = false;
     //This declared because of note in documentation on function CreatePrimitive 
     private MeshFilter mesh_filter;
     private static Dictionary<Tuple<int, int>, Cell> cells;
