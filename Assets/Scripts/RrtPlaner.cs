@@ -374,9 +374,11 @@ public class RRTree
         }
         */
         //input.steering = v_out.steering_law.getSample(Time.deltaTime); //(unew - xnear.theta) * Mathf.Rad2Deg; //Rnd.Range(-max_steering, max_steering); 
+      
         input.steering = Rnd.Range(-max_steering, max_steering);
-        //Debug.Log($"k={ v_out.k } steering={input.steering} degrees");
+       //Debug.Log($"k={ v_out.k } steering={input.steering} degrees");
         output.theta += model.runge_kutta_integration(model.compute_theta, dt, input, ref output);
+    
         output.x += model.runge_kutta_integration(model.compute_x, dt, input, ref output);
         output.z += model.runge_kutta_integration(model.compute_z, dt, input, ref output);
   
@@ -514,6 +516,7 @@ public class RRTree
                     //Debug.Log($"Reached at {k} node. lastVertex.dist = {lastVertex.dist} ");
                 }
                 //CreateSpherePrimitive(lastVertex.value, sphere_scale, $"node {k}", Color.cyan);
+                break;
             }
         }
         Debug.Log($"generated {vertexes.Count} vertexes");
@@ -545,7 +548,7 @@ public class RRTree
 
         return sphere;
     }
-    public const int K = 100000;
+    public const int K = 30000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
     const float GOAL_THRESHOLD = 2F;
@@ -555,8 +558,8 @@ public class RRTree
 public class RrtPlaner : MonoBehaviour
 {
     static float[] Xs, Zs;
-    public Vector3 StartP;
-    public Vector3 EndP;
+    Vector3 StartP;
+    Vector3 EndP;
     public List<Component> wps;
     public RRTree rrt = null;
     static Vector3 sphere_scale = new Vector3(3F, 3F, 3F);
@@ -664,23 +667,6 @@ public class RrtPlaner : MonoBehaviour
     }
 
   
-    void TestCoordinates(int numberPoints, Vector3 startP, Vector3 endP)
-    {
-        numberPoints = 10000;
-        Debug.Log($"numberPoints = {numberPoints} "); 
-        float[] Xs = new float[numberPoints+1];
-        float[] Zs = new float[numberPoints+1];
-        int[] Colors = new int[numberPoints + 1];
-        int ret = Native.Invoke<int, GenerateCoordinatesDist>(nativeLibraryPtr, Xs, Zs, Colors, numberPoints, DistanceImage.pixelsint, DistanceImage.width, 64);
-        Debug.Log("GenerateCoordinatesDist ret = " + ret);
-        for (int i = 0; i < numberPoints; i++)
-        {
-            //Debug.Log($"X = {Xs[i]} Z = {Zs[i]}");
-            CreateSpherePrimitive(new Vector3(Xs[i], 1, Zs[i]), sphere_scale, $"node {i}", new Color(1 - (float)Colors[i] / Mathf.Sqrt(256*256),0,0));
-       
-        }
-    }
-
    void FindShortestPath()
     {
         float shortestPathDist = 0;
@@ -703,7 +689,7 @@ public class RrtPlaner : MonoBehaviour
         float interval_dist = shortestPathDist / n_waypoints;
         float d = 0;
         int idx = 0;
-
+       
             while (v != null)
             {
                 if (v.parent != null)
@@ -717,10 +703,9 @@ public class RrtPlaner : MonoBehaviour
 
                 }
                 v = v.parent;
-                
 
             }
-
+            
                 // reindex waypoints
                 int idx2 = wps.Count;
                 foreach (Component wp in wps)
@@ -745,7 +730,7 @@ public class RrtPlaner : MonoBehaviour
         }
 
         //---------- TREE RENDERING
-        if (wps.Count == 2)
+        if (wps.Count >= 2)
         {
             
             StartP = wps[0].transform.position;
