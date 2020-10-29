@@ -1,0 +1,17 @@
+Баранов Владимир (vsbaranov83@gmail.com) 
+
+Initially, my goal was to master the basics of scripting for Unity in a few months.
+For 4 months of studying tutorials and books on Unity, of which I have written quite a few on the Internet
+Additional materials, including an archive with the project, can be downloaded at the bottom of this article.
+  1. a script that was able to build a 3D maze from cubes,
+  2. a script that finds the path in the maze and
+  3. a script that controls the movement of a RigitBody of the sphere type along a given trajectory.
+For this, I took a purely coding task, create a maze and write an algorithm for passing this maze. Launch a ball that will roll along the path found or find the path itself.
+
+For the agent to go through the maze, I first used a q-learning approach. I already had a C ++ module which I just translated into C #. It worked, but not always. Sometimes the ball would not find a way out. So I dug into google academy looking for a more interesting algorithmic solution to this problem. I came across one algorithm that was based on the construction of a set of all possible trajectories that were built into the tree structure. I took a kinematic model of a car that only drives forward. Started implementing this algorithm using the environment of an automatically generated maze. The implementation of the integration over the runge-kutta caused some difficulties, and here the previous developments on the construction of trajectories for aircraft came in handy.
+Another algorithmic problem that arose was how to make a biased distribution of points from the start to the end. Those. the density of the points should have increased when approaching the end of the maze. For this, I decided to use native code, I took the distribution functions of a piecewise linear function from the C ++ standard library. I had to compile all this into a dll module, which I picked up in the si sharpe. Theoretically, it was possible to do with a pure si-sharp, but it seemed to me that using the native code would be another lesson for me in mastering the engine. A little later, I came up with the idea that the search for nearest neighbors in the rrt algorithm can be done using a quad-tree, but I did not implement it because this is enough for an educational task, I am not going to implement the algorithm for a 2000x2000 maze.
+
+Unity has a built-in dynamic car model, which I tested by loading an arbitrary 3d mesh from the Internet and setting up the components as needed, so that the car is controlled using the buttons on the keyboard, adapts to the terrain, etc. This did not give me much difficulty. I decided to simplify the control task for myself, since the parameters of the dynamic auto model built in Unity were unknown, I took the movement of the sphere and wrote a simple script to push the sphere to the nearest waypoint. It worked. But the problem was that the ball was hitting the walls.
+
+Next, I tried to use the mlagents library to train the neural network model. I am not an expert in the field of machine learning, on my account only the implementation of the backprop algorithm and some approximation problems. The mlagents control problem solves. For example, if you place red balls in a maze and give an agent a reward for picking up red balls, a penalty for colliding with walls, but as far as finding a path in a maze is concerned
+
