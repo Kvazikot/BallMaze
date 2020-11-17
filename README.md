@@ -9,6 +9,8 @@
 Алгоритм Rapidly-exploring Random Trees. (см. статью PlanningforDynamicVeh-1.pdf)
 
 Програмный модуль rrt_planer.cs
+See demo here https://youtu.be/O0O-UNEF0ks
+
 На первом этапе можно реализовать алгоритм простого дерева без интегрирования траектории по Рунге-Кутта (как описано в LavKuf01.pdf).  Figure 2.
 В качестве множества препятствий можно использовать что-то похожее на этот рисунок.
 В юнити это означает что нужно вместо линий нарисовать протяженные объекты типа параллепипедов. 
@@ -42,6 +44,7 @@ for Unity 2019.3.11f1
 
 RRT path planning algorithm.
 (Part of the car_model Unity project.)
+See demo here https://youtu.be/O0O-UNEF0ks
 
 Algorithmic task: investigate the RRT algorithm for control to bypass collisions and go the route from the starting point, through intermediate points and to the final
 Rapidly-exploring Random Trees algorithm. (see article PlanningforDynamicVeh-1.pdf)
