@@ -396,6 +396,8 @@ public class MazeGen : MonoBehaviour
 
     }
     
+	static string tagWall = "wall";
+	
     void CreateWallPrimitive(Vector3 position, Vector3 localScale, string name, Color color)
     {
         GameObject leftWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -407,6 +409,7 @@ public class MazeGen : MonoBehaviour
         var renderer = leftWall.GetComponent<MeshRenderer>();
         renderer.material.SetColor("_Color", color);
         leftWall.layer = 8;
+		leftWall.tag = tagWall;
     }
 
     void CreateSpherePrimitive(Vector3 position, string name, Color color)
@@ -541,14 +544,18 @@ public class MazeGen : MonoBehaviour
     // check that paths array is zero size
     void TestAllWallsClosed()
     {
-        Cell c_test = cells[get_index(cellsX-1, cellsY-1)];
-        c_test.leftWall.bVisible = true;
-        c_test.bottomWall.bVisible = true;
-        c_test.topWall.bVisible = true;
-        c_test.rightWall.bVisible = true;
-
+		foreach(var c in cells)
+		{
+			Cell c_test = c.Value;
+			c_test.leftWall.bVisible = true;
+			c_test.bottomWall.bVisible = true;
+			c_test.topWall.bVisible = true;
+			c_test.rightWall.bVisible = true;
+			//Vector3 C = getCellCenter(c_test.j*cellsX + c_test.i);
+			//CreateSpherePrimitive(C+new Vector3(cell_size/2, 0, cell_size/2), "center " + Convert.ToString(1 * cellsX + 1), Color.red);
+		}
         //MovePlayerInCell(cellsX - 1, cellsY-1);
-        //CreateSpherePrimitive(C+new Vector3(cell_size/2, 0, cell_size/2), "center " + Convert.ToString(1 * cellsX + 1), Color.red);
+        
 
     }
 

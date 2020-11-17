@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Policies;
 using System.Linq;
 
 public class RollerAgent : Agent
@@ -11,12 +12,16 @@ public class RollerAgent : Agent
     Rigidbody rb;
     PlayerController pc;
     //PathWalker path_walker;
+	public TrainingArea area;
     Waypoints waypoints;
     public Transform Target;
     public float forceMultiplier = 15;
     public float Sum = 10;
     System.DateTime ts = System.DateTime.UtcNow;
     const float MaxMass = 3f;
+	float m_LateralSpeed;
+    float m_ForwardSpeed;
+	float agentRunSpeed;
 
     // Start is called before the first frame update
     void Start()
@@ -26,14 +31,91 @@ public class RollerAgent : Agent
       //  path_walker = GetComponent<PathWalker>();
         GameObject wps = GameObject.Find("Waypoints");
         waypoints = wps.GetComponent<Waypoints>();
+		
+		// two new variables for discreet space motion
+		m_LateralSpeed = 0.3f;
+        m_ForwardSpeed = 1.3f;
+		agentRunSpeed = 1f;
+    }
+	
+	public void MoveAgent(float[] act)
+    {
+        var dirToGo = Vector3.zero;
+        var rotateDir = Vector3.zero;
+
+        int forwardAxis = (int)act[0];
+        int rightAxis = (int)act[1];
+        int rotateAxis = (int)act[2];
+	
+		//Debug.Log($"forwardAxis={forwardAxis} rightAxis={rightAxis} rotateAxis={rotateAxis}");
+        switch (forwardAxis)
+        {
+            case 1:
+                dirToGo = transform.forward * m_ForwardSpeed;
+                break;
+            case 2:
+                dirToGo = transform.forward * -m_ForwardSpeed;
+                break;
+        }
+
+        switch (rightAxis)
+        {
+            case 1:
+                dirToGo = transform.right * m_LateralSpeed;
+                break;
+            case 2:
+                dirToGo = transform.right * -m_LateralSpeed;
+                break;
+        }
+
+        switch (rotateAxis)
+        {
+            case 1:
+                rotateDir = transform.up * -1f;
+                break;
+            case 2:
+                rotateDir = transform.up * 1f;
+                break;
+        }
+
+        transform.Rotate(rotateDir, Time.deltaTime * 100f);
+        rb.AddForce(dirToGo * agentRunSpeed,
+            ForceMode.VelocityChange);
     }
 
-    public override void Heuristic(float[] actionsOut)
+
+ public override void Heuristic(float[] actionsOut)
     {
-        actionsOut[0] = Input.GetAxis("Horizontal");
-        actionsOut[1] = Input.GetAxis("Vertical");
-        actionsOut[2] = 0;
-        Debug.Log("Heuristic function call");
+		actionsOut[0] = 0;
+		actionsOut[1] = 0;
+		actionsOut[2] = 0;
+        //forward
+        if (Input.GetKey(KeyCode.W))
+        {
+            actionsOut[0] = 1;
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            actionsOut[0] = 2;
+        }
+        //rotate
+        if (Input.GetKey(KeyCode.A))
+        {
+            actionsOut[2] = 1;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            actionsOut[2] = 2;
+        }
+        //right
+        if (Input.GetKey(KeyCode.E))
+        {
+            actionsOut[1] = 1;
+        }
+        if (Input.GetKey(KeyCode.Q))
+        {
+            actionsOut[1] = 2;
+        }
     }
 
     public override void OnEpisodeBegin()
@@ -42,6 +124,8 @@ public class RollerAgent : Agent
         // If the Agent fell, zero its momentum
         this.rb.angularVelocity = Vector3.zero;
         this.rb.velocity = Vector3.zero;
+		area.Reset();
+		pc.targetWaypoint = null;
         // Move the target to a new spot
 
         //waypoints.HideAllWaypoints();
@@ -50,46 +134,49 @@ public class RollerAgent : Agent
         //                               4.98f);
 
         //waypoints.UnhideAllWaypoints();
-		Debug.Log("Episode begin");
+		//Debug.Log("Episode begin");
 
     }
    
     public override void CollectObservations(VectorSensor sensor)
     {
+	
         // Target and Agent positions
+		
         if (pc.targetWaypoint != null)
         {
             Target = pc.targetWaypoint.transform;
-            sensor.AddObservation(pc.targetWaypoint.transform.position);
+            sensor.AddObservation(Target.position);
+			Vector3 vect = new Vector3();
+			vect = Target.position - this.transform.position;
+			sensor.AddObservation(vect.magnitude);
         }
-        //sensor.AddObservation(pc.targetWaypoint2);
+		return;    
+		//sensor.AddObservation(pc.targetWaypoint2);
         //sensor.AddObservation(this.transform.position);
         //sensor.AddObservation(pc.redShpereDetected);
 
-        //sensor.AddObservation(Target.position - this.transform.position);
+        
 
-        //Hit points on maze walls
-       //for(int i=0; i < pc.hitPoints.Count; i++)
-//sensor.AddObservation(pc.hitPoints[i]);
-//
+       //Hit points on maze walls
+       for(int i=0; i < pc.hitPoints.Count; i++)
+	     sensor.AddObservation(pc.hitPoints[i]);		
        // for (int i = 0; i < PlayerController.n_scans; i++)
        //    sensor.AddObservation(pc.hit_bits[i]);
 
         //float maxDistance = float.MinValue;
         foreach (float d in pc.distancesToWallsVector)
-            if(d!=-1)
                sensor.AddObservation(d);
         //    maxDistance = Mathf.Max(d, maxDistance);
         //sensor.AddObservation(maxDistance);
 
         // Agent velocity
-        sensor.AddObservation(rb.velocity.x);
-        sensor.AddObservation(rb.velocity.z);
+        //sensor.AddObservation(rb.velocity.x);
+        //sensor.AddObservation(rb.velocity.z);
 
-        sensor.AddObservation(pc.targetDetected);
+        //sensor.AddObservation(pc.targetDetected);
         //sensor.AddObservation(!pc.targetLost);
 
-        sensor.AddObservation(pc.distance);
     }
 
     bool stickToWalls()
@@ -105,7 +192,7 @@ public class RollerAgent : Agent
         var t = System.DateTime.UtcNow - ts;
         if (t.Milliseconds >= 500)
         {
-            Debug.Log($"stickToWalls  Sum={Sum}");
+            //Debug.Log($"stickToWalls  Sum={Sum}");
             ts = System.DateTime.UtcNow;
             Sum = 0;
         }
@@ -134,15 +221,7 @@ public class RollerAgent : Agent
 
     public override void OnActionReceived(float[] vectorAction)
     {
-        
-        //------------------- Actions, size = 2
-        Vector3 controlSignal = Vector3.zero;
-        controlSignal.x = vectorAction[0];
-        controlSignal.z = vectorAction[1];
-        forceMultiplier = 10 * Mathf.Abs(vectorAction[3]);
-        rb.AddForce(controlSignal * forceMultiplier);
-
-        rb.mass = 1 + MaxMass * Mathf.Abs( vectorAction[2] );
+		MoveAgent(vectorAction);
 
         //--------- inference mode only
         //if (pc.hadGreenSphereColisions | pc.hadRedSphereColisions |  distanceToTarget < 2f)
@@ -156,11 +235,9 @@ public class RollerAgent : Agent
        // SetReward(pc.scan_reward);
 
 
-        if (pc.targetLost)
-        {
-            SetReward(-0.001f);
-            
-        }
+        //if (pc.targetLost)
+        //    SetReward(-0.001f);            
+        
        // if (t.Seconds > 40)
        //     EndEpisode();
        //Debug.Log("t.TotalSeconds = " + t.TotalSeconds);
@@ -169,14 +246,14 @@ public class RollerAgent : Agent
         //Debug.Log($"t={Mathf.Round(pc.t)}");
         //if min distance to walls < 2 stick
 
-        if (wallIsNear())
-        {
-            SetReward(-0.001f);
-        }
+        //if (wallIsNear())
+        //{
+         //   SetReward(-0.001f);
+       // }
             
         if ( stickToWalls() )
         {
-            SetReward(-0.005f);
+            //SetReward(-0.005f);
             //Debug.Log("Stick to walls!");
             //EndEpisode();
         }

@@ -26,8 +26,8 @@ public class PlayerController : MonoBehaviour
     public bool targetLost = false;
     Color targetColor = Color.green;
     public List<Vector3> hitPoints;
-    public float FOV = 15;
-    public const int n_scans = 10;
+    public float FOV = 20;
+    public const int n_scans = 12;
     public float[] distancesToWallsVector;
     public float[] distancesVector;//{ 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
     //                                 ----------- forward scans(n_scans)  +   forward, backward, left, right
@@ -45,10 +45,8 @@ public class PlayerController : MonoBehaviour
         for (int i = 0; i < distancesVector.Length; i++)
             distancesVector[0] = float.MaxValue;
         //prepare rotation matrices
-        Vector3 rotationVector = new Vector3(0, -(FOV / (n_scans)), 0);
-        Vector3 rotationVector2 = new Vector3(0, (FOV / (n_scans)), 0);
-        Quaternion q = Quaternion.Euler(rotationVector);
-        Quaternion q2 = Quaternion.Euler(rotationVector2);
+        Quaternion q = Quaternion.AngleAxis(-(FOV ), Vector3.up); 
+        Quaternion q2 = Quaternion.AngleAxis((FOV ), Vector3.up); 		
         rotateM = Matrix4x4.Rotate(q);
         rotateM2 = Matrix4x4.Rotate(q2);
 		targetWaypoint = GameObject.Find("S").transform;
@@ -58,7 +56,7 @@ public class PlayerController : MonoBehaviour
     // directions towards path or perpendicular to path
     void Find4Directions()
     {
-        const float maxRayDistance = 10f;
+        const float maxRayDistance = 50f;
         int n = 0;
         List<float> angles = new List<float> { Angle.RIGHT, Angle.LEFT, Angle.BACKWARD, Angle.FORWARD };
         Vector3 dir = new Vector3();
@@ -101,11 +99,12 @@ public class PlayerController : MonoBehaviour
         if (!dict.ContainsKey(hitP.collider.transform))
         {
             scan_info.n_scans = 1;
-            if (hitP.collider.GetType() == typeof(SphereCollider))
+			//Debug.Log("tag = " + hitP.collider.tag);
+            if (hitP.collider.tag == "waypoint")
             {
                 scan_info.type = ObjectType.WAYPOINT;
                 scan_info.color = color;
-                hitPoints.Add(hitP.point);
+				hitPoints.Add(hitP.point);
             }
             else
             {
@@ -134,10 +133,13 @@ public class PlayerController : MonoBehaviour
 
         hitPoints.Clear();
 
-        Debug.DrawRay(transform.position, rb.velocity, Color.blue);
+        Vector3 axis = Vector3.forward;
+        //axis = Matrix4x4.Rotate(rb.rotation).MultiplyVector(axis);
+        Debug.DrawRay(transform.position, axis, Color.blue);
+
 
         // scan left
-        Vector3 dir = rb.velocity;
+        Vector3 dir = axis;
      
         for (int i = 0; i < n_scans / 2; i++)
         {
@@ -146,15 +148,14 @@ public class PlayerController : MonoBehaviour
             Ray ray = new Ray(transform.position, dir);
             if (Physics.Raycast(ray, out hitP, maxRayDistance, (1 << 8)))
             {
-                Debug.DrawLine(transform.position, hitP.point, Color.green);
+                //Debug.DrawLine(transform.position, hitP.point, Color.green);
                 set_scan_data(hitP, i, ref dict);
-     
             }
             dir = rotateM.MultiplyVector(dir);
         }
 
         // scan right
-        dir = rb.velocity;
+        dir = axis;
         for (int i = 0; i < n_scans / 2; i++)
         {
             RaycastHit hitP;
@@ -162,7 +163,7 @@ public class PlayerController : MonoBehaviour
             Ray ray = new Ray(transform.position, dir);
             if (Physics.Raycast(ray, out hitP, maxRayDistance, (1 << 8)))
             {
-                Debug.DrawLine(transform.position, hitP.point, Color.magenta);
+                //Debug.DrawLine(transform.position, hitP.point, Color.magenta);
                 set_scan_data(hitP, i + n_scans / 2, ref dict);
             }
             dir = rotateM2.MultiplyVector(dir);
@@ -175,15 +176,17 @@ public class PlayerController : MonoBehaviour
         int count = 0;
         foreach (var entry in dict)
         {
+			//Debug.Log( entry.Key + " type=" + entry.Value.type+"n_scans="+ entry.Value.n_scans);
             if (entry.Value.type == ObjectType.WAYPOINT)
             {
+				
                 float distance = Vector3.Distance(entry.Key.position, this.transform.position);
                 if (minValue > Mathf.Min(minValue, distance))
                 {
                     minValue = Mathf.Min(minValue, distance);
                     Target = entry.Key;
                 }
-                //Debug.Log( entry.Key + " type=" + entry.Value.type+"n_scans="+ entry.Value.n_scans);
+
                 if (entry.Key == targetWaypoint)
                     num_target_scans++;
 
@@ -194,10 +197,10 @@ public class PlayerController : MonoBehaviour
         }
 
         //scan_reward = scan_reward * (num_target_scans);
-        //Debug.Log("scan_reward " + scan_reward);
+        //Debug.Log("dict.size" + dict.Count);
 
-        if(Target!=null && Target!=dieingWaypoint)
-        if (targetDetected == false && Target!= targetWaypoint)
+        //if(Target!=null && Target!=dieingWaypoint)
+        if (Target!= targetWaypoint)
         {
 
             targetWaypoint = Target;
@@ -240,16 +243,19 @@ public class PlayerController : MonoBehaviour
                 if (color == Color.red)
 				{
                     agent.SetReward(1f);
-					Debug.Log("reward from red sphere");
+
+					//Debug.Log("reward from red sphere");
 				}
                 // collide with green spheres i.e. targets
                 else if (color == Color.green)
                     agent.SetReward(0.5f);
-                agent.EndEpisode();
+                
+				agent.EndEpisode();
+				
                 if (targetWaypoint != null)
                 {
-                    renderer.material.SetColor("_Color", Color.magenta);
-                    Destroy(targetWaypoint.gameObject, 1);
+                    //renderer.material.SetColor("_Color", Color.magenta);
+                    //Destroy(targetWaypoint.gameObject, 1);
                     dieingWaypoint = targetWaypoint;
                     targetWaypoint = null;                   
                     targetDetected = false;
