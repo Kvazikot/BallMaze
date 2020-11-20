@@ -83,12 +83,31 @@ extern "C" {
 		return n;
 	}
 
+	// параметрическое уравнение линии
+	Vector2 line_eq(Vector2 A, Vector2 B, float t)
+	{
+		Vector2 C;
+
+		C.x = A.x + t * (B.x - A.x);
+		C.y = A.y + t * (B.y - A.y);
+
+		return C;
+	}
+
 	PLUGINEX(int) GenerateCoordinates2(float Xs[], float Ys[], int len, float xs, float xe, float ys, float ye)
 	{
 		std::default_random_engine generator;
-		std::array<double, 3> intervalsX{ xs, middle(xs, xe),  xe };
-		std::array<double, 3> intervalsY{ ys, middle(ys, ye), ye };
-		std::array<double, 3> weights{ 2, 4, 15.0 };
+		Vector2 A(xs, ys);
+		Vector2 B(xe, ye);
+		Vector2 AA, BB;
+
+		AA = line_eq(A, B, -1.0);
+		BB = line_eq(A, B, 2.0);
+
+
+		std::array<double, 3> intervalsX{ AA.x, middle(xs, xe),  BB.x };
+		std::array<double, 3> intervalsY{ AA.y, middle(ys, ye),  BB.y };
+		std::array<double, 3> weights{  2, 4, 15};
 
 		std::piecewise_linear_distribution<double>
 			distributionX(intervalsX.begin(), intervalsX.end(), weights.begin());
