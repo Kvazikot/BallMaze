@@ -1,4 +1,6 @@
-﻿using Rnd = UnityEngine.Random;
+﻿// Kvazikot 
+
+using Rnd = UnityEngine.Random;
 using UnityEngine;
 using System;
 using System.Collections;
@@ -9,6 +11,7 @@ using System.IO;
 // native function with piecewise_linear_distribution
 // generates coordinates with bias towards EndP
 delegate int GenerateCoordinates(float[] Xs, float[] Ys, int len, float xmin, float xmax, float ymin, float ymax);
+delegate int GenerateCoordinates2(float[] Xs, float[] Ys, int len, float xmin, float xmax, float ymin, float ymax);
 delegate int GenerateCoordinatesDist(float[] Xs, float[] Ys,int[] Colors, int n_points, int[] distImage, int image_size, int maze_size);
 
 public struct InputVec
@@ -63,16 +66,25 @@ public struct Edge
 public class Vertex
 {
     public Vertex()
-    { }
-    public Vertex(Vector3 _value)
+    {
+        children = new List<Vertex>();
+    }
+    public Vertex(Vector3 _value): base()
     {
         value = _value;
+        children = new List<Vertex>();
     }
-    public Vertex(Vector3 _value, Vertex parent_vertex)
+    public Vertex(Vector3 _value, Vertex parent_vertex) : base()
     {
         value = _value;
         parent = parent_vertex;
+        children = new List<Vertex>();
     }
+    public void add_child(Vertex xnew)
+    {
+        children.Add(xnew);
+    }
+    public List<Vertex> children;
     public Vector3 value = new Vector3(0, 0, 0);
     public Vertex parent = null;
     public float dist = 0;
@@ -215,18 +227,11 @@ class KinematicModel
             t += dt;
             //Debug.Log($"t={t} input.steering={input.steering} theta={output.theta} x={output.x} z={output.z}");
         }
-
-
     }
-
- 
-
-
    
     public void TestInterpolateSteering()
     {
         SteeringLaw steering_law = new SteeringLaw(-30, 30,  100 * Time.deltaTime);
-        //Debug.Log($"Test Interpolate Steering!");
         for (float k = 0; k < 1000; k++)
         {
             float t = k * Time.deltaTime;
@@ -264,6 +269,7 @@ public class RRTree
         vertexes = new List<Vertex>();
         edges = new List<Edge>();
         edge_map = new Dictionary<Tuple<Vertex, Vertex>, Edge>();
+        paths = new Dictionary<float, int>();
         startP = start;
         endP = end;
         startP.y = TreeHeight;
@@ -273,9 +279,6 @@ public class RRTree
        
     }
 
-
-
-  
     
     //-------------------------------------------------------------------------------------------------------------------------
 
@@ -351,7 +354,7 @@ public class RRTree
     {
         
         // Initital values
-        const float V = 20F;         // speed
+        const float V = 10F;         // speed
         const float max_steering = 40;
         InputVec input = new InputVec(0, V);
         OutputVec output = new OutputVec(xnear.value.x, xnear.value.z, xnear.theta);
@@ -402,6 +405,7 @@ public class RRTree
             xnew.parent = xnear;
             Vector3 d = xnear.value - xnew.value;
             xnew.dist = xnear.dist + d.sqrMagnitude;
+            xnear.add_child(xnew);
             add_vertex(xnew);
             add_edge(xnear, xnew, unew);
             Vector3 distToGoal = xnew.value - endP;
@@ -424,44 +428,17 @@ public class RRTree
     {
         // Bit shift the index of the layer (8 - obstacles) to get a bit mask
         int layerMask = 1 << 8;
-        const float MIN_DIST_RAY = 1.3F;
+        RaycastHit hit;
 
-        List<float> scan_angles = new List<float> { Angle.FORWARD, Angle.RIGHT, Angle.BACKWARD, Angle.LEFT };
-        //Debug.Log($"xnear={xnear.x},{xnear.y},{xnear.z}");
-        foreach (float angle in scan_angles)
+        float distanceToObstacle = 0;
+
+        // Cast a sphere wrapping character controller 10 meters forward
+        // to see if it is about to hit anything.
+        if (Physics.SphereCast(xnear, TreeHeight, xnew - xnear, out hit, 10))
         {
-            Vector3 dir;
-            RaycastHit hitP;
-            Vector3 p = xnew;
-            dir.x = Mathf.Sin(Mathf.Deg2Rad * angle);
-            dir.z = Mathf.Cos(Mathf.Deg2Rad * angle);
-            dir.y = TreeHeight;
-            p.y = TreeHeight;
-            Ray ray = new Ray(p, dir);
-            if (Physics.Raycast(ray, out hitP, MIN_DIST_RAY, layerMask))
-            {
-                // if ((r1 == true) || (r2 == true) || (r3 == true))
-                //Debug.Log($"k={k} colision " + hitP.point.ToString() + $" xnear={xnear}"); //
-                //Debug.Log($"colision");
+            distanceToObstacle = hit.distance;
+            if (distanceToObstacle < MIN_DIST_RAY)
                 return false;
-            }
-        }
-        return true;
-
-    }
-
-    bool colision_free_path2(Vector3 xnear, Vector3 xnew)
-    {
-        // Bit shift the index of the layer (8 - obstacles) to get a bit mask
-        int layerMask = 1 << 8;
-        RaycastHit hitP;
-
-        if (Physics.Linecast(xnear, xnew, out hitP, layerMask))
-        {
-            // if ((r1 == true) || (r2 == true) || (r3 == true))
-            //Debug.Log($"k={k} colision " + hitP.point.ToString() + $" xnear={xnear}"); //
-            //Debug.Log($"colision");
-            return false;
         }
         return true;
 
@@ -489,34 +466,32 @@ public class RRTree
     public float Build(IntPtr nativeLibraryPtr)
     {
         //generate random points biased towards endP
-       // int[] Colors = new int[K + 1];
-       // int ret = Native.Invoke<int, GenerateCoordinatesDist>(nativeLibraryPtr, Xs, Zs, Colors, K, DistanceImage.pixelsint, DistanceImage.width, 64);
-       //  Debug.Log("ret = " + ret);
-        int ret = Native.Invoke<int, GenerateCoordinates>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
-        Debug.Log("ret = " + ret);
+        int ret = Native.Invoke<int, GenerateCoordinates2>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
+        Debug.Log("GenerateCoordinates2 ret = " + ret);
 
-
+        int n_reached = 0;
         float shortestDist = float.MaxValue;
         init(startP);
         for (k = 0; k < K; k++)
         {
             Vector3 xrand = random_state(true);
-         
-            //float distThreshold = 0.1f;
-            //if (DistanceImage.getDistance(xrand) < distThreshold)
-            //    continue;
-            //Debug.Log("xrand=" + xrand.ToString());
+            //CreateSpherePrimitive(new Vector3(Xs[k],0,Zs[k]), new Vector3(0.1f,0.1f,0.1f), $"node {k}", Color.cyan);
+            //continue;
             if ( Extend(xrand) ==  GoalState.REACHED )
             {
                 Vertex lastVertex = vertexes[vertexes.Count - 1];
                 shortestDist = Mathf.Min(shortestDist, lastVertex.dist);
+
+                if (!paths.ContainsKey(lastVertex.dist))
+                    paths.Add(lastVertex.dist, vertexes.Count - 1);
+
                 if (shortestDist == lastVertex.dist)
                 {
                     shortestPathIndex = vertexes.Count - 1;
                     //Debug.Log($"Reached at {k} node. lastVertex.dist = {lastVertex.dist} ");
                 }
-                //CreateSpherePrimitive(lastVertex.value, sphere_scale, $"node {k}", Color.cyan);
-                break;
+                n_reached++;
+                if (n_reached >= 20) break;
             }
         }
         Debug.Log($"generated {vertexes.Count} vertexes");
@@ -543,32 +518,38 @@ public class RRTree
         sphere.transform.localScale = scale;
         //sphere.transform.parent = GetComponent<Transform>();
         sphere.transform.name = name;
-        var renderer = sphere.GetComponent<MeshRenderer>();
-        renderer.material.SetColor("_Color", color);
+        //var renderer = sphere.GetComponent<MeshRenderer>();
+        //renderer.material.SetColor("_Color", color);
 
         return sphere;
     }
+    public Dictionary<float, int> paths;
     public const int K = 30000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
+    const float MIN_DIST_RAY = 0.5F;
     const float GOAL_THRESHOLD = 2F;
 };
 
-
+[ExecuteInEditMode]
 public class RrtPlaner : MonoBehaviour
 {
     static float[] Xs, Zs;
     Vector3 StartP;
     Vector3 EndP;
+    public Transform StartPObject;
+    public Transform EndPObject;
     public List<Component> wps;
     public RRTree rrt = null;
-    static Vector3 sphere_scale = new Vector3(1F, 1F, 1F);
-    public const int n_waypoints = 20;
+    static Vector3 sphere_scale = new Vector3(0.2F, 0.2F, 0.2F);
+    public int n_waypoints = 20;
     static IntPtr nativeLibraryPtr;
 
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
+        StartP = StartPObject.transform.position;
+        EndP = EndPObject.transform.position;
         if (nativeLibraryPtr != IntPtr.Zero) return;
         nativeLibraryPtr = Native.LoadLibrary(Directory.GetCurrentDirectory() + "\\TestDLL\\x64\\Debug\\TestDLL.dll");
         if (nativeLibraryPtr == IntPtr.Zero)
@@ -576,11 +557,7 @@ public class RrtPlaner : MonoBehaviour
             Debug.LogError("Failed to load native library " + Directory.GetCurrentDirectory());
         }
 
-        GameObject StartPObject = GameObject.Find("S");
-        GameObject EndPObject = GameObject.Find("E");
-
-        StartP = StartPObject.transform.position;
-        EndP  = EndPObject.transform.position;
+     
 
       
     }
@@ -597,8 +574,8 @@ public class RrtPlaner : MonoBehaviour
         sphere.transform.localScale = scale;
         //sphere.transform.parent = GetComponent<Transform>();
         sphere.transform.name = name;
-        var renderer = sphere.GetComponent<MeshRenderer>();
-        renderer.material.SetColor("_Color", color);
+        //var renderer = sphere.GetComponent<MeshRenderer>();
+        //renderer.material.SetColor("_Color", color);
     
         return sphere;
     }
@@ -666,30 +643,57 @@ public class RrtPlaner : MonoBehaviour
         return outPoint;
     }
 
-  
-   void FindShortestPath()
+    Vertex traverseTree(Vertex root, float shortestPathDist, int n_waypoints,  float d,  int idx )
     {
+        float D = d;
+        int IDX = idx;
+        if (root!=null)
+        {
+            foreach (var child in root.children)
+            {
+                Debug.Log($"child {child.value} {child.dist} d={d} shortestPathDist={shortestPathDist} n_waypoints={n_waypoints}");
+                if (child == null) continue;    
+                float interval_dist = shortestPathDist / n_waypoints;
+                D += Vector3.Distance(root.value, child.value);
+                if (d > interval_dist)
+                {
+                    AddWaypoint(child.value, IDX, Color.red);
+                    d = 0; IDX++;
+                }
+                if (child.dist > shortestPathDist)
+                    break;
+
+                traverseTree(child, shortestPathDist, n_waypoints, D, IDX);
+            }
+        }
+        return null;
+    }
+  
+   public void SetWaypoints()
+    {
+        int n_shortests_paths = 50;
+
         float shortestPathDist = 0;
         rrt = new RRTree(StartP, EndP);
         shortestPathDist = rrt.Build(nativeLibraryPtr);
-         KinematicModel model = new KinematicModel();
-        //model.TestKinematicModel(StartP.transform.position, ref rrt.edges);
+
         //create nodes of a RRT as spheres
-        int i = 0;
-        //foreach (Vertex v in rrt.vertexes)
-        //    if(v.parent == null)
-        //      CreateSpherePrimitive(v.value, sphere_scale, $"node {i++}", Color.cyan);
-        
+
         // render the shortest path
         Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
                                          //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
         int max_iters = RRTree.K;
-        // insert sphere every 1/20 part of the path
 
-        float interval_dist = shortestPathDist / n_waypoints;
-        float d = 0;
-        int idx = 0;
-       
+        // insert sphere every 1/20 part of the path
+        Debug.Log($"n paths = {rrt.paths.Count}");
+        wps.Clear();
+        /*
+        foreach (var path_kv in rrt.paths)
+        {
+            float interval_dist = path_kv.Key / n_waypoints;
+            float d = 0;
+            int idx = 0;
+            v = rrt.vertexes[path_kv.Value];
             while (v != null)
             {
                 if (v.parent != null)
@@ -703,34 +707,55 @@ public class RrtPlaner : MonoBehaviour
 
                 }
                 v = v.parent;
-
             }
-            
-                // reindex waypoints
-                int idx2 = wps.Count;
-                foreach (Component wp in wps)
-                    wp.name = $"waypoint_{idx2--}";
+            n_shortests_paths--;
+            if (n_shortests_paths==0) break;
+        }
+        */
+        //=============================================================
+        
+        int idx = 0;
+        float interval_dist = shortestPathDist / n_waypoints;
+        float d = 0;
+        for (int i = 0; i < rrt.vertexes.Count; i++)
+        {
+            v = rrt.vertexes[i];
+            if (v.parent != null)
+                d += Vector3.Distance(v.parent.value, v.value);
+            if (d > interval_dist)
+            {
+                AddWaypoint(v.value, idx, Color.red);
+                d = 0; idx++;
+            }
+                
+            AddWaypoint(v.value, idx, Color.red);
+            if (v.dist > shortestPathDist)
+                break;
+        }
+        
+        //--------------------------------------------------------------------
+        //float d = 0; int idx = 0;
+        //traverseTree(rrt.vertexes[0], shortestPathDist, n_waypoints, d, idx);
+
+            // reindex waypoints
+        int idx2 = wps.Count;
+        foreach (Component wp in wps)
+            wp.name = $"waypoint_{idx2--}";
     }
 
 
     // Update is called once per frame
     void FixedUpdate()
     {
-
-        //check that maze is generated
-        GameObject ground = GameObject.Find("Plane");
-        MazeGen maze = ground.GetComponent<MazeGen>();
         n_frame++;
 
-        if (maze.bMazeGenerated && n_frame == 120)
+        if (n_frame == 20)
         {
-            //TestCoordinates(1000, StartP, EndP);
-            FindShortestPath();
-                           
+            SetWaypoints();                          
         }
 
         //---------- TREE RENDERING
-        if (wps.Count >= 2)
+        //if (wps.Count >= 2)
         {
             
             if (rrt == null) return;
