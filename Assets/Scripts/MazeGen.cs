@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Kvazikot 
+
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -515,7 +518,8 @@ public class MazeGen : MonoBehaviour
     {
         int i = id % cellsX;
         int j = id / cellsX;
-        float maze_size = transform.localScale.x * transform.localScale.x * 2;
+        //float maze_size = transform.localScale.x * transform.localScale.x * 2;
+        float maze_size = 10 * transform.localScale.x;
         float cell_size = maze_size / cellsX ;
         float offseX = maze_size / 2;
         float offseZ = maze_size / 2;

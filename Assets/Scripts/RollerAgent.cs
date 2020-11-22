@@ -1,4 +1,7 @@
-﻿//using System;
+﻿// Kvazikot 
+// based on mlagents samples code
+
+//using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,10 +18,8 @@ public class RollerAgent : Agent
 	public TrainingArea area;
     Waypoints waypoints;
     public Transform Target;
-    public float forceMultiplier = 15;
     public float Sum = 10;
     System.DateTime ts = System.DateTime.UtcNow;
-    const float MaxMass = 3f;
 	float m_LateralSpeed;
     float m_ForwardSpeed;
 	float agentRunSpeed;
@@ -124,7 +125,7 @@ public class RollerAgent : Agent
         // If the Agent fell, zero its momentum
         this.rb.angularVelocity = Vector3.zero;
         this.rb.velocity = Vector3.zero;
-		area.Reset();
+		area.Reset(transform);
 		pc.targetWaypoint = null;
         // Move the target to a new spot
 
@@ -142,27 +143,37 @@ public class RollerAgent : Agent
     {
 	
         // Target and Agent positions
-		
+		  return;
         if (pc.targetWaypoint != null)
         {
             Target = pc.targetWaypoint.transform;
             sensor.AddObservation(Target.position);
 			Vector3 vect = new Vector3();
 			vect = Target.position - this.transform.position;
-			sensor.AddObservation(vect.magnitude);
+			//sensor.AddObservation(vect.magnitude);
         }
-		return;    
+        //return;
 		//sensor.AddObservation(pc.targetWaypoint2);
         //sensor.AddObservation(this.transform.position);
         //sensor.AddObservation(pc.redShpereDetected);
 
+      
         
 
        //Hit points on maze walls
        for(int i=0; i < pc.hitPoints.Count; i++)
-	     sensor.AddObservation(pc.hitPoints[i]);		
-       // for (int i = 0; i < PlayerController.n_scans; i++)
-       //    sensor.AddObservation(pc.hit_bits[i]);
+	     sensor.AddObservation(pc.hitPoints[i].point);
+
+       //distances
+        //for (int i = 0; i < pc.hitPoints.Count; i++)
+        //    sensor.AddObservation(pc.hitPoints[i].distance);
+        
+        //tag labels
+        for (int i = 0; i < pc.tagLabels.Count; i++)
+         sensor.AddObservation(pc.tagLabels[i]);
+
+        // for (int i = 0; i < PlayerController.n_scans; i++)
+        //    sensor.AddObservation(pc.hit_bits[i]);
 
         //float maxDistance = float.MinValue;
         foreach (float d in pc.distancesToWallsVector)

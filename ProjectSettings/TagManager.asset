@@ -6,6 +6,7 @@ TagManager:
   tags:
   - wall
   - waypoint
+  - agent
   layers:
   - Default
   - TransparentFX

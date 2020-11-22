@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.MLAgents.Sensors;
 using UnityEngine;
 using Rnd = UnityEngine.Random;
 
@@ -25,13 +26,16 @@ public class PlayerController : MonoBehaviour
     public bool targetDetected = false;
     public bool targetLost = false;
     Color targetColor = Color.green;
-    public List<Vector3> hitPoints;
-    public float FOV = 20;
-    public const int n_scans = 12;
+    public List<RaycastHit> hitPoints;
+    public List<int> tagLabels;
+    public const int n_scans = 6;
+    public float FOV = 10;
+    int targets_collected = 0;
+    public int TOTAL_TARGETS = 4;
     public float[] distancesToWallsVector;
     public float[] distancesVector;//{ 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
-    //                                 ----------- forward scans(n_scans)  +   forward, backward, left, right
-      
+                                   //                                 ----------- forward scans(n_scans)  +   forward, backward, left, right
+
 
     Matrix4x4 rotateM, rotateM2;
 
@@ -44,13 +48,17 @@ public class PlayerController : MonoBehaviour
         distancesToWallsVector = new float[5];
         for (int i = 0; i < distancesVector.Length; i++)
             distancesVector[0] = float.MaxValue;
+        tagLabels = new List<int>();
+        hitPoints = new List<RaycastHit>();
         //prepare rotation matrices
-        Quaternion q = Quaternion.AngleAxis(-(FOV ), Vector3.up); 
-        Quaternion q2 = Quaternion.AngleAxis((FOV ), Vector3.up); 		
+        Quaternion q = Quaternion.AngleAxis(-FOV , Vector3.up); 
+        Quaternion q2 = Quaternion.AngleAxis(FOV , Vector3.up); 		
         rotateM = Matrix4x4.Rotate(q);
         rotateM2 = Matrix4x4.Rotate(q2);
 		targetWaypoint = GameObject.Find("S").transform;
 		dieingWaypoint = GameObject.Find("S").transform;
+        
+
     }
 
     // directions towards path or perpendicular to path
@@ -90,9 +98,9 @@ public class PlayerController : MonoBehaviour
 
     bool set_scan_data(RaycastHit hitP, int i, ref Dictionary<Transform, ScanInfo> dict)
     {
-        ScanInfo scan_info = new ScanInfo();
-        
 
+
+        ScanInfo scan_info = new ScanInfo();
         var renderer = hitP.collider.GetComponent<MeshRenderer>();
         Color color = renderer.material.GetColor("_Color");
 
@@ -104,12 +112,14 @@ public class PlayerController : MonoBehaviour
             {
                 scan_info.type = ObjectType.WAYPOINT;
                 scan_info.color = color;
-				hitPoints.Add(hitP.point);
+				hitPoints.Add(hitP);
+                tagLabels.Add(1);
             }
             else
             {
                 scan_info.type = ObjectType.WALL;
-                
+                hitPoints.Add(hitP);
+                tagLabels.Add(0);
             }
             dict[hitP.collider.transform] = scan_info;
         }
@@ -132,43 +142,41 @@ public class PlayerController : MonoBehaviour
         Dictionary<Transform, ScanInfo> dict = new Dictionary<Transform, ScanInfo>();
 
         hitPoints.Clear();
+        tagLabels.Clear();
 
-        Vector3 axis = Vector3.forward;
-        //axis = Matrix4x4.Rotate(rb.rotation).MultiplyVector(axis);
+        Vector3 axis = Vector3.back;
+        Matrix4x4 M1 = Matrix4x4.Rotate(Quaternion.AngleAxis(-60 + Rnd.Range(-5,5), Vector3.up));
+        Matrix4x4 M2 = Matrix4x4.Rotate(rb.rotation);
+        Matrix4x4 M3 = M1 ;
+        axis = M3.MultiplyVector(axis);
         Debug.DrawRay(transform.position, axis, Color.blue);
-
+      
 
         // scan left
         Vector3 dir = axis;
      
-        for (int i = 0; i < n_scans / 2; i++)
+        for (int i = 0; i < n_scans; i++)
         {
             RaycastHit hitP;
             distancesVector[i] = 0;
             Ray ray = new Ray(transform.position, dir);
-            if (Physics.Raycast(ray, out hitP, maxRayDistance, (1 << 8)))
+          
+            RaycastHit hit;
+
+            float distanceToObstacle = 0;
+            // Cast a sphere wrapping character controller 10 meters forward
+            // to see if it is about to hit anything.
+            if (Physics.SphereCast(ray,2,out hit, 100,(1 << 8)))
             {
-                //Debug.DrawLine(transform.position, hitP.point, Color.green);
-                set_scan_data(hitP, i, ref dict);
+                distanceToObstacle = hit.distance;
+                set_scan_data(hit, i, ref dict);
+                Debug.DrawLine(transform.position, hit.point, Color.green);
             }
+           
+
             dir = rotateM.MultiplyVector(dir);
         }
-
-        // scan right
-        dir = axis;
-        for (int i = 0; i < n_scans / 2; i++)
-        {
-            RaycastHit hitP;
-            distancesVector[i + n_scans / 2] = 0;
-            Ray ray = new Ray(transform.position, dir);
-            if (Physics.Raycast(ray, out hitP, maxRayDistance, (1 << 8)))
-            {
-                //Debug.DrawLine(transform.position, hitP.point, Color.magenta);
-                set_scan_data(hitP, i + n_scans / 2, ref dict);
-            }
-            dir = rotateM2.MultiplyVector(dir);
-        }
-
+     
         // get target detection
         float minValue = int.MaxValue;
         Transform Target = targetWaypoint;
@@ -176,6 +184,8 @@ public class PlayerController : MonoBehaviour
         int count = 0;
         foreach (var entry in dict)
         {
+            
+            if(count == n_scans/2)
 			//Debug.Log( entry.Key + " type=" + entry.Value.type+"n_scans="+ entry.Value.n_scans);
             if (entry.Value.type == ObjectType.WAYPOINT)
             {
@@ -195,14 +205,14 @@ public class PlayerController : MonoBehaviour
           
             count++;
         }
-
+       
         //scan_reward = scan_reward * (num_target_scans);
         //Debug.Log("dict.size" + dict.Count);
 
         //if(Target!=null && Target!=dieingWaypoint)
         if (Target!= targetWaypoint)
         {
-
+            dieingWaypoint = targetWaypoint;
             targetWaypoint = Target;
             targetDetected = true;
             targetLost = false;
@@ -221,17 +231,13 @@ public class PlayerController : MonoBehaviour
         //     scan_reward = 1f;
 
     }
-    
 
-   
 
-    void OnCollisionEnter(Collision collision)
-    {
-		
-        foreach (ContactPoint contact in collision.contacts)
-        {
-            Debug.DrawRay(contact.point, contact.normal, Color.white);
-            Collider collider = contact.otherCollider;
+
+
+    //void OnCollisionEnter(Collision collision)
+    void OnTriggerEnter(Collider collider)
+    {	       
             var renderer = collider.GetComponent<MeshRenderer>();
             Color color = renderer.material.GetColor("_Color");
             //Debug.Log("color " + color);
@@ -242,15 +248,19 @@ public class PlayerController : MonoBehaviour
                 // collide with red spheres
                 if (color == Color.red)
 				{
-                    agent.SetReward(1f);
-
-					//Debug.Log("reward from red sphere");
-				}
+                    agent.SetReward( 1f );
+                    targets_collected++;
+                    //Debug.Log("reward from red sphere");
+                }
                 // collide with green spheres i.e. targets
                 else if (color == Color.green)
                     agent.SetReward(0.5f);
-                
-				agent.EndEpisode();
+
+                if (targets_collected == TOTAL_TARGETS)
+                {
+                    agent.EndEpisode();
+                    targets_collected = 0;
+                }
 				
                 if (targetWaypoint != null)
                 {
@@ -268,18 +278,20 @@ public class PlayerController : MonoBehaviour
                 // collide with walls
                 agent.SetReward(-0.001f);
 
-        }
+       
 
     }
 
-    
+
     // Update is called once per frame
+    int n_fr=0;
     void FixedUpdate()
     {
+        //if(n_fr > 10 && (n_fr % 10)==0)
+        //  ScanInVelocityDirection(FOV, n_scans);
+        //Find4Directions();
        
-        ScanInVelocityDirection(FOV, n_scans);
-        Find4Directions();
-
+        n_fr++;
     }
 
     

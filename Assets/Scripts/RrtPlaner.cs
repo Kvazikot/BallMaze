@@ -354,7 +354,7 @@ public class RRTree
     {
         
         // Initital values
-        const float V = 10F;         // speed
+        const float V = Velocity;         // speed
         const float max_steering = 40;
         InputVec input = new InputVec(0, V);
         OutputVec output = new OutputVec(xnear.value.x, xnear.value.z, xnear.theta);
@@ -431,7 +431,6 @@ public class RRTree
         RaycastHit hit;
 
         float distanceToObstacle = 0;
-
         // Cast a sphere wrapping character controller 10 meters forward
         // to see if it is about to hit anything.
         if (Physics.SphereCast(xnear, TreeHeight, xnew - xnear, out hit, 10))
@@ -527,8 +526,9 @@ public class RRTree
     public const int K = 30000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
-    const float MIN_DIST_RAY = 0.5F;
+    const float MIN_DIST_RAY = 1F;
     const float GOAL_THRESHOLD = 2F;
+    const float Velocity = 20F; // velocity constant for car kinematic model
 };
 
 [ExecuteInEditMode]
@@ -571,6 +571,8 @@ public class RrtPlaner : MonoBehaviour
         sphere.transform.parent = waypoints.transform;
         //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         sphere.transform.position = position;
+        SphereCollider collider = sphere.GetComponent<SphereCollider>();
+        collider.isTrigger = true;
         sphere.transform.localScale = scale;
         //sphere.transform.parent = GetComponent<Transform>();
         sphere.transform.name = name;
@@ -643,27 +645,32 @@ public class RrtPlaner : MonoBehaviour
         return outPoint;
     }
 
-    Vertex traverseTree(Vertex root, float shortestPathDist, int n_waypoints,  float d,  int idx )
+    Vertex traverseTree(Vertex root, float shortestPathDist, int n_waypoints,  float d,  int idx, int level, Color color )
     {
         float D = d;
         int IDX = idx;
+		int LEVEL = level;
+		Color COLOR = color;
         if (root!=null)
         {
+		
             foreach (var child in root.children)
             {
-                Debug.Log($"child {child.value} {child.dist} d={d} shortestPathDist={shortestPathDist} n_waypoints={n_waypoints}");
+                //new Color(Rnd.Range(0.0f,1.0f), Rnd.Range(0.0f, 1.0f), Rnd.Range(0.0f, 1.0f));
+
+                //Debug.Log($"child {child.value} {child.dist} d={d} shortestPathDist={shortestPathDist} n_waypoints={n_waypoints}");
                 if (child == null) continue;    
                 float interval_dist = shortestPathDist / n_waypoints;
                 D += Vector3.Distance(root.value, child.value);
-                if (d > interval_dist)
+                if (D > interval_dist)
                 {
-                    AddWaypoint(child.value, IDX, Color.red);
-                    d = 0; IDX++;
+                    AddWaypoint(child.value, IDX, COLOR);
+                    D = 0; IDX++;
                 }
                 if (child.dist > shortestPathDist)
                     break;
-
-                traverseTree(child, shortestPathDist, n_waypoints, D, IDX);
+                LEVEL++;
+                traverseTree(child, shortestPathDist, n_waypoints, D, IDX, LEVEL, COLOR);
             }
         }
         return null;
@@ -713,7 +720,7 @@ public class RrtPlaner : MonoBehaviour
         }
         */
         //=============================================================
-        
+        /*
         int idx = 0;
         float interval_dist = shortestPathDist / n_waypoints;
         float d = 0;
@@ -732,10 +739,10 @@ public class RrtPlaner : MonoBehaviour
             if (v.dist > shortestPathDist)
                 break;
         }
-        
+        */
         //--------------------------------------------------------------------
-        //float d = 0; int idx = 0;
-        //traverseTree(rrt.vertexes[0], shortestPathDist, n_waypoints, d, idx);
+        int level = 0; Color color = Color.yellow; float d = 0; int idx = 0; 
+        traverseTree(rrt.vertexes[0], shortestPathDist, n_waypoints, d, idx, level, color);
 
             // reindex waypoints
         int idx2 = wps.Count;
@@ -749,7 +756,7 @@ public class RrtPlaner : MonoBehaviour
     {
         n_frame++;
 
-        if (n_frame == 20)
+        if (n_frame == 2)
         {
             SetWaypoints();                          
         }
