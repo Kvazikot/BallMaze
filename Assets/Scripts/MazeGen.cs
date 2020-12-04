@@ -335,7 +335,7 @@ public class MazeGen : MonoBehaviour
         Debug.Log("Maze RANDOM starting index is " + idx.Item1 + " " + idx.Item2);
         cells[idx].bVisited = true;
         cells[idx].addWalls(ref wall_list);
-
+        int iters = 0;
         while (wall_list.Count != 0)
         {
             int n;
@@ -366,9 +366,10 @@ public class MazeGen : MonoBehaviour
                 wall.parent_cell.bVisited = true;
             }
 
-
+            iters++;
             wall_list.RemoveAt(wall_list.IndexOf(wall));
         }
+        Debug.Log("iters " + iters);
 
         //boundary walls
         for (int i = 0; i < cellsX; i++)
@@ -409,8 +410,8 @@ public class MazeGen : MonoBehaviour
         leftWall.transform.rotation = Quaternion.AngleAxis(UnityEngine.Random.RandomRange(0, 0.1F), Vector3.up);
         leftWall.transform.parent = mesh_filter.transform;
         leftWall.transform.name = name;
-        var renderer = leftWall.GetComponent<MeshRenderer>();
-        renderer.material.SetColor("_Color", color);
+        //var renderer = leftWall.GetComponent<MeshRenderer>();
+        //renderer.material.SetColor("_Color", color);
         leftWall.layer = 8;
 		leftWall.tag = tagWall;
     }
@@ -456,10 +457,14 @@ public class MazeGen : MonoBehaviour
                 if( cells.ContainsKey(idx) )
                 {
                     Cell cell = cells[idx];
-                    float offseX = maze_size / 2;
-                    float offseZ = maze_size / 2;
-                    Vector3 C = new Vector3(i * cell_size - offseX, 0, (j+1)  * cell_size - offseZ);
-                    Vector3 C2 = new Vector3(i * cell_size - offseX + wall_width/2, 0, (j ) * cell_size - offseZ - wall_width/2);
+                    float offseX =  maze_size / 2;
+                    float offseZ =  maze_size / 2;
+                    Vector3 C = new Vector3(transform.position.x + i * cell_size - offseX, 
+                                            0,
+                                            transform.position.z + (j+1)  * cell_size - offseZ);
+                    Vector3 C2 = new Vector3(transform.position.x + i * cell_size - offseX + wall_width/2, 
+                                             0,
+                                             transform.position.z + (j ) * cell_size - offseZ - wall_width/2);
 
                     if (cell.leftWall.bVisible)
                     {
@@ -687,7 +692,9 @@ public class MazeGen : MonoBehaviour
 
         wall_height = 2;
 
-        RunTests();
+        CreateCells(cellsX, cellsY);
+
+        CreateMaze();
 
         DrawCells();
 
@@ -712,14 +719,14 @@ public class MazeGen : MonoBehaviour
     GameObject waypoints;
     public int cellsX;
     public int cellsY;
-    public static float wall_width;
-    public static float wall_height;
-    public static float size;
+    float wall_width;
+    float wall_height;
+    float size;
     public bool bMazeGenerated = false;
     //This declared because of note in documentation on function CreatePrimitive 
     private MeshFilter mesh_filter;
-    private static Dictionary<Tuple<int, int>, Cell> cells;
-    public static List<Wall> wall_list;
+    private Dictionary<Tuple<int, int>, Cell> cells;
+    public List<Wall> wall_list;
 
 }
 
