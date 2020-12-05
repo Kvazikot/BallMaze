@@ -23,6 +23,7 @@ public class PathWalker : MonoBehaviour
     public float t = 0;
     List<Vector3> directions;
     RrtPlaner rrt_planer;
+    public List<Component> wps;
 
     int seconds = 0;
 
@@ -44,11 +45,11 @@ public class PathWalker : MonoBehaviour
 
     }
 
-
+   
     void FindTargetWaypoint()
     {
         bool bReached = false;
-        if (rrt_planer.wps.Count > 2)
+        if (wps.Count > 2)
         {
             //for new path - find closest point on the path
             if (targetWaypoint == S.transform)
@@ -65,10 +66,10 @@ public class PathWalker : MonoBehaviour
             {
 
                 //set next target waypoint
-                int idx = rrt_planer.wps.IndexOf(wp);
+                int idx = wps.IndexOf(wp);
                 if (idx > 0)
                 {
-                    var nextWp = rrt_planer.wps[idx - 1];
+                    var nextWp = wps[idx - 1];
                     targetWaypoint = nextWp.transform;
                 }
 
@@ -79,7 +80,7 @@ public class PathWalker : MonoBehaviour
 
 
     }
-
+    
     // Update is called once per frame
     void FixedUpdate()
     {
@@ -125,10 +126,10 @@ public class PathWalker : MonoBehaviour
     {
         const float maxRayDistance = 10f;
         const float minRayDistance = 3f;
-        int idx = rrt_planer.wps.IndexOf(targetWaypoint);
+        int idx = wps.IndexOf(targetWaypoint);
         if (idx > 0)
         {
-            var nextWp = rrt_planer.wps[idx - 1];
+            var nextWp = wps[idx - 1];
             Vector3 dir = nextWp.transform.position - targetWaypoint.transform.position;
             RaycastHit hitP;
             Ray ray = new Ray(transform.position, dir);
