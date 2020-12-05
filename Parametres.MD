@@ -20,6 +20,7 @@ ________________________________________________________________________________
    Note: Attach this script to plane object.
 
 ## Input Parametres
-CellsX - x resolution
-CellsY - y resolution
-Wall_width - scale of horizontal and vertical primitives
+* CellsX - x resolution
+* CellsY - y resolution
+* Wall_width - scale of horizontal and vertical primitives
+
