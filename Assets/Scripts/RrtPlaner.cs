@@ -508,8 +508,8 @@ public class RRTree
     GameObject CreateSpherePrimitive(Vector3 position, Vector3 scale, string name, Color color)
     {
         //create a copy of start waypoint to supress coliders
-        GameObject S = GameObject.Find("S");//GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        GameObject sphere = UnityEngine.Object.Instantiate(S, position, Quaternion.identity);
+        GameObject E = GameObject.Find("E");//GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        GameObject sphere = UnityEngine.Object.Instantiate(E, position, Quaternion.identity);
         GameObject waypoints = GameObject.Find("Waypoints");
         sphere.transform.parent = waypoints.transform;
         //GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -546,6 +546,8 @@ public class RrtPlaner : MonoBehaviour
     static IntPtr nativeLibraryPtr;
     public float Velocity = 20F;
     public int K_iterations = 50000;
+    float shortestPathDist = 0;
+
     // Start is called before the first frame update
     public void Start()
     {
@@ -676,16 +678,33 @@ public class RrtPlaner : MonoBehaviour
         }
         return null;
     }
-  
-   public void SetWaypoints()
-    {
-        int n_shortests_paths = 50;
 
-        float shortestPathDist = 0;
+    public void CreateTree()
+    {
         rrt = new RRTree(StartP, EndP);
         rrt.Velocity = Velocity;
         rrt.K = K_iterations;
-        shortestPathDist = rrt.Build(nativeLibraryPtr);
+        shortestPathDist = rrt.Build(nativeLibraryPtr);       
+    }
+
+    public void DeleteWaypoints()
+    {
+        int i = 0;
+        while (wps.Count!=2)
+        {
+            Component wp = wps[i];
+            if (wp.name != "S" && wp.name != "E")
+            {
+                SafeDestroy.SafeDestroyGameObject(wp);
+                i--;
+            }
+            wps.Remove(wp);
+            i++;
+        }
+    }
+
+    public void SetWaypoints()
+    {
 
         //create nodes of a RRT as spheres
 
@@ -759,10 +778,19 @@ public class RrtPlaner : MonoBehaviour
     {
         n_frame++;
 
-        if (n_frame == 2)
+        if (n_frame  == 2)
         {
-            SetWaypoints();                          
+            CreateTree();
+            SetWaypoints();
         }
+
+
+        if ((n_frame % 1000) == 0)
+        {
+            DeleteWaypoints();
+            SetWaypoints();
+        }
+
 
         //---------- TREE RENDERING
         //if (wps.Count >= 2)

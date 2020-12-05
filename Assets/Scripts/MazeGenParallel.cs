@@ -342,11 +342,12 @@ public partial class MazeGenParallel : MonoBehaviour
                 if (horizontal)
                     CreateWallPrimitive(new Vector3(center.x, transform.position.y, center.y), 
                                         new Vector3(wall_width, 2, 
-                                        (v2 - v1).magnitude), $"wall {n}", Color.green);
+                                        (v2 - v1).magnitude + wall_width/2), 
+                                        $"wall {n}", Color.green);
                 else
                     CreateWallPrimitive(new Vector3(center.x, transform.position.y, center.y), 
-                                        new Vector3((v2 - v1).magnitude, 
-                                        2, wall_width), $"wall {n}", Color.green);
+                                        new Vector3((v2 - v1).magnitude + wall_width / 2, 
+                                                    2, wall_width), $"wall {n}", Color.green);
             }
             n++;
         }
