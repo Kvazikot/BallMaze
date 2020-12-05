@@ -70,13 +70,17 @@ public partial class MazeGenParallel : MonoBehaviour
 
 
     }
-
+        
     public void CreateGrid()
     {
-        float grid_step = 30F;
-        (float, float) v00 = vertexes_d[0];
-        Vector3 v0 = new Vector3(v00.Item1, 5, v00.Item2);
-        Vector3 v = new Vector3(v00.Item1, 5, v00.Item2);
+
+        float maze_size = 10 * transform.localScale.x;
+        float grid_step = maze_size / cellsX;
+        wall_width = grid_step * 0.3f;
+
+        (float, float) v00 = (transform.position.x - maze_size/2, transform.position.y + maze_size/2);
+        Vector3 v0 = new Vector3(v00.Item1, transform.position.y, v00.Item2);
+        Vector3 v = new Vector3(v00.Item1, transform.position.y, v00.Item2);
         int counter = 0;
         int x_counter = 0;
 
@@ -336,9 +340,13 @@ public partial class MazeGenParallel : MonoBehaviour
             {
                 //Gizmos.DrawLine(new Vector3(x1, 5, y1), new Vector3(x2, 5, y2));
                 if (horizontal)
-                    CreateWallPrimitive(new Vector3(center.x, 5, center.y), new Vector3(wall_width, 1, (v2 - v1).magnitude), $"wall {n}", Color.green);
+                    CreateWallPrimitive(new Vector3(center.x, transform.position.y, center.y), 
+                                        new Vector3(wall_width, 2, 
+                                        (v2 - v1).magnitude), $"wall {n}", Color.green);
                 else
-                    CreateWallPrimitive(new Vector3(center.x, 5, center.y), new Vector3((v2 - v1).magnitude,1,wall_width), $"wall {n}", Color.green);
+                    CreateWallPrimitive(new Vector3(center.x, transform.position.y, center.y), 
+                                        new Vector3((v2 - v1).magnitude, 
+                                        2, wall_width), $"wall {n}", Color.green);
             }
             n++;
         }
@@ -383,7 +391,7 @@ public partial class MazeGenParallel : MonoBehaviour
 
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmos1()
     {
         if (!canDraw) return;
         foreach (var v in vertexes_d)
@@ -404,6 +412,7 @@ public partial class MazeGenParallel : MonoBehaviour
     public int cellsY;
     CreateMazeJob maze_job;
     public float wall_width = 3f;
+    float grid_step;
     float size;
     public bool bMazeGenerated = false;
     //This declared because of note in documentation on function CreatePrimitive 

@@ -354,7 +354,7 @@ public class RRTree
     {
         
         // Initital values
-        const float V = Velocity;         // speed
+        float V = Velocity;         // speed
         const float max_steering = 40;
         InputVec input = new InputVec(0, V);
         OutputVec output = new OutputVec(xnear.value.x, xnear.value.z, xnear.theta);
@@ -465,8 +465,8 @@ public class RRTree
     public float Build(IntPtr nativeLibraryPtr)
     {
         //generate random points biased towards endP
-        int ret = Native.Invoke<int, GenerateCoordinates2>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
-        Debug.Log("GenerateCoordinates2 ret = " + ret);
+        int ret = Native.Invoke<int, GenerateCoordinates>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
+        Debug.Log("GenerateCoordinates ret = " + ret);
 
         int n_reached = 0;
         float shortestDist = float.MaxValue;
@@ -523,12 +523,12 @@ public class RRTree
         return sphere;
     }
     public Dictionary<float, int> paths;
-    public const int K = 30000;
+    public int K = 50000;
     public const float TreeHeight = 0.3F;
     const float MAX_DIST_RAY = 40F;
     const float MIN_DIST_RAY = 1F;
     const float GOAL_THRESHOLD = 2F;
-    const float Velocity = 20F; // velocity constant for car kinematic model
+    public float Velocity = 20F; // velocity constant for car kinematic model
 };
 
 [ExecuteInEditMode]
@@ -544,7 +544,8 @@ public class RrtPlaner : MonoBehaviour
     static Vector3 sphere_scale = new Vector3(0.2F, 0.2F, 0.2F);
     public int n_waypoints = 20;
     static IntPtr nativeLibraryPtr;
-
+    public float Velocity = 20F;
+    public int K_iterations = 50000;
     // Start is called before the first frame update
     public void Start()
     {
@@ -682,6 +683,8 @@ public class RrtPlaner : MonoBehaviour
 
         float shortestPathDist = 0;
         rrt = new RRTree(StartP, EndP);
+        rrt.Velocity = Velocity;
+        rrt.K = K_iterations;
         shortestPathDist = rrt.Build(nativeLibraryPtr);
 
         //create nodes of a RRT as spheres
@@ -689,7 +692,7 @@ public class RrtPlaner : MonoBehaviour
         // render the shortest path
         Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
                                          //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
-        int max_iters = RRTree.K;
+        int max_iters = K_iterations;
 
         // insert sphere every 1/20 part of the path
         Debug.Log($"n paths = {rrt.paths.Count}");
@@ -783,7 +786,7 @@ public class RrtPlaner : MonoBehaviour
             // render the shortest path
             Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];
             //Debug.Log($"rrt.shortestPathIndex = {rrt.shortestPathIndex}");
-            int max_iters = RRTree.K;
+            int max_iters = K_iterations;
 
             while (v != null )
             {
