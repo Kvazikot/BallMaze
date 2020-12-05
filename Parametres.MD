@@ -8,6 +8,9 @@
 * "End P Object" - Object that represents destination point
 * "Velocity" - velocity of kinematic model (increase proportional to maze scale)
 * "K_iterations" - number of iterations of rrt planer algorithm (corresponds to number of generated points in graph)
+* "MAX_DIST_RAY" - max ray distance in checking colisions (see SphereCast calls) 
+* "MIN_DIST_RAY" - max ray distance in checking colisions (this exactly means min distance of computed trajectory to the walls )
+* "GOAL_THRESHOLD" - distance to goal then planner stops 
 
 ## Output:   
    Trajectory from "Start P Object" to "End P Object" with many of red spheres (waypoints) on leaves
