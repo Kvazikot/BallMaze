@@ -12,13 +12,13 @@ using UnityEngine;
 public partial class MazeGenParallel : MonoBehaviour
 {
     
-    public (float, float)[] vertexes_d;
-    public (int, int)[] edges_d;
-    public bool[] visibility_d;
-    public bool[] visited;
-    public Dictionary<string, int> edge_map;
-    public Dictionary<int, int> notCellNumbers;
-    public bool canDraw;
+    (float, float)[] vertexes_d;
+    (int, int)[] edges_d;
+    bool[] visibility_d;
+    bool[] visited;
+    Dictionary<string, int> edge_map;
+    Dictionary<int, int> notCellNumbers;
+    bool canDraw;
     /*
     static (float, float)[] vertexes_d = new (float, float)[] { (-30f, 30f), (0,30), (30,30), (-30,10),
                                               (0, 10), (30,10), (-30,-8), (0,-8), (30,-8)};
@@ -37,7 +37,6 @@ public partial class MazeGenParallel : MonoBehaviour
     };
 
     */
-    const int NOT_VALID_ID = -1;
 
     public struct CreateMazeJob : IJob
     {
@@ -272,81 +271,7 @@ public partial class MazeGenParallel : MonoBehaviour
         for (int i = 0; i < visited.Length; i++)
             visited[i] = false;
     }
-
-    int getNeibourCell(int edge_id)
-    {
-        //horizontal or vertical?
-        int diff = Math.Abs(edges_d[edge_id].Item1 - edges_d[edge_id].Item2);
-        int cell_id = Math.Min(edges_d[edge_id].Item1, edges_d[edge_id].Item2);
-        if (diff == 1)
-            return cell_id + 1;
-        else
-            return cell_id + cellsX + 1;
-    }
-
-    int AddCellWalls(int vertex, ref List<int> wall_list)
-    {
-        int i1 = vertex;
-        int i2 = vertex + 1;
-        int i3 = i1 + cellsX + 1;
-        int i4 = i1 + cellsX + 2;
-        int id1 = edge_id(i1, i2);
-        int id2 = edge_id(i2, i4);
-        int id3 = edge_id(i3, i4);
-        int id4 = edge_id(i1, i3);
-        int n = wall_list.Count;
-        wall_list.Add(id1);
-        wall_list.Add(id2);
-        wall_list.Add(id3);
-        wall_list.Add(id4);
-        return wall_list.Count - n;
-    }
-
-    int edge_id(int Item1, int Item2)
-    {
-        int id;
-        string key = $"{Item1}-{Item2}";
-        if (edge_map.TryGetValue(key, out id))
-            return id;
-        key = $"{Item2}-{Item1}";
-        if (edge_map.TryGetValue(key, out id))
-            return id;
-        return NOT_VALID_ID;
-    }
-
-    bool edges_equal((int, int) edge1, (int, int) edge2)
-    {
-        return ((edge1.Item1 == edge2.Item1) && (edge2.Item1 == edge2.Item2))
-            || ((edge1.Item1 == edge2.Item2) && (edge1.Item2 == edge2.Item2));
-    }
-
-
-    int AddVertexNeibours(int vertex_idx, (int, int) edge, ref HashSet<int> wall_list)
-    {
-        int grid_period = cellsX + 1;
-        int id = edge_id(vertex_idx, vertex_idx + 1);
-        wall_list.Add(id);
-        id = edge_id(vertex_idx, vertex_idx - 1);
-        wall_list.Add(id);
-        id = edge_id(vertex_idx + grid_period, vertex_idx);
-        wall_list.Add(id);
-        id = edge_id(vertex_idx - grid_period, vertex_idx);
-        wall_list.Add(id);
-        id = edge_id(edge.Item1, edge.Item2);
-        wall_list.Remove(id);
-        wall_list.Remove(NOT_VALID_ID);
-        return 0;
-    }
-
-    int AddEdgeNeibours(int edge_idx, ref HashSet<int> wall_list)
-    {
-        (int, int) edge = edges_d[edge_idx];
-        AddVertexNeibours(edge.Item1, edge, ref wall_list);
-        AddVertexNeibours(edge.Item2, edge, ref wall_list);
-        //wall_list.Remove((edge.Item2, edge.Item1));
-        return 0;
-    }
-
+              
     public void DrawGrapth((float,float)[] vertexes, (int,int)[] edges, ref bool[] visibility)
     {
        
@@ -363,7 +288,62 @@ public partial class MazeGenParallel : MonoBehaviour
             n++;
         }
     }
-    
+
+    void CreateWallPrimitive(Vector3 position, Vector3 localScale, string name, Color color)
+    {
+        GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.transform.position = position;
+        wall.transform.localScale = localScale;
+        wall.transform.rotation = Quaternion.AngleAxis(UnityEngine.Random.RandomRange(0, 0.1F), Vector3.up);
+        wall.transform.parent = transform;
+        wall.transform.name = name;
+        //var renderer = wall.GetComponent<MeshRenderer>();
+        //renderer.material.SetColor("_Color", color);
+        wall.layer = 8;
+        wall.tag = "wall";
+    }
+
+    // параметрическое уравнение линии
+    Vector2 line_eq(Vector2 A, Vector2 B, float t)
+    {
+        Vector2 C;
+
+        C.x = A.x + t * (B.x - A.x);
+        C.y = A.y + t * (B.y - A.y);
+
+        return C;
+    }
+
+    public void DrawMaze()
+    {
+
+        int n = 0;
+        foreach (var e in edges_d)
+        {
+            float x1 = vertexes_d[e.Item1].Item1;
+            float y1 = vertexes_d[e.Item1].Item2;
+            float x2 = vertexes_d[e.Item2].Item1;
+            float y2 = vertexes_d[e.Item2].Item2;
+            Vector2 v1 = new Vector2(x1, y1);
+            Vector2 v2 = new Vector2(x2, y2);
+            Vector2 center = line_eq(v1, v2, 0.5f);
+            bool horizontal;
+            if (x1 == x2)
+                horizontal = true;
+            else
+                horizontal = false;
+            if (visibility_d[n])
+            {
+                //Gizmos.DrawLine(new Vector3(x1, 5, y1), new Vector3(x2, 5, y2));
+                if (horizontal)
+                    CreateWallPrimitive(new Vector3(center.x, 5, center.y), new Vector3(wall_width, 1, (v2 - v1).magnitude), $"wall {n}", Color.green);
+                else
+                    CreateWallPrimitive(new Vector3(center.x, 5, center.y), new Vector3((v2 - v1).magnitude,1,wall_width), $"wall {n}", Color.green);
+            }
+            n++;
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -396,6 +376,7 @@ public partial class MazeGenParallel : MonoBehaviour
         //DrawCells1(result);
         BuildMaze();
         //maze_job.visibility.Dispose();
+        DrawMaze();
 
         bMazeGenerated = true;
 
@@ -422,8 +403,7 @@ public partial class MazeGenParallel : MonoBehaviour
     public int cellsX;
     public int cellsY;
     CreateMazeJob maze_job;
-    float wall_width;
-    float wall_height;
+    public float wall_width = 3f;
     float size;
     public bool bMazeGenerated = false;
     //This declared because of note in documentation on function CreatePrimitive 
