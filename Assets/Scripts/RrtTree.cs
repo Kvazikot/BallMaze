@@ -9,6 +9,7 @@ using UnityEngine;
 // generates coordinates with bias towards EndP
 delegate int GenerateCoordinates(float[] Xs, float[] Ys, int len, float xmin, float xmax, float ymin, float ymax);
 delegate int GenerateCoordinates2(float[] Xs, float[] Ys, int len, float xmin, float xmax, float ymin, float ymax);
+delegate int GenerateCoordinates3(float[] Xs, float[] Ys, int len, float[] startP, float[] endP, float[] areaStart, float[] areaEnd);
 delegate int GenerateCoordinatesDist(float[] Xs, float[] Ys, int[] Colors, int n_points, int[] distImage, int image_size, int maze_size);
 
 public struct InputVec
@@ -257,11 +258,13 @@ public class RRTree
     KinematicModel model = new KinematicModel();
     Vector3 startP;
     Vector3 endP;
+    Vector3 areaStartP;
+    Vector3 areaEndP;
     float dt, t = 0;
     int k = 0;
     float[] Xs, Zs; // random samples biased to endP
 
-    public RRTree(Vector3 start, Vector3 end)
+    public RRTree(int _K, Vector3 start, Vector3 end, Vector3 areaBegin, Vector3 areaEnd)
     {
         vertexes = new List<Vertex>();
         edges = new List<Edge>();
@@ -271,6 +274,9 @@ public class RRTree
         endP = end;
         startP.y = TreeHeight;
         endP.y = TreeHeight;
+        areaStartP = areaBegin;
+        areaEndP = areaEnd;
+        K = _K;
         Xs = new float[K + 1];
         Zs = new float[K + 1];
 
@@ -375,7 +381,9 @@ public class RRTree
         */
         //input.steering = v_out.steering_law.getSample(Time.deltaTime); //(unew - xnear.theta) * Mathf.Rad2Deg; //Rnd.Range(-max_steering, max_steering); 
 
-        input.steering = Rnd.Range(-max_steering, max_steering);
+
+        input.steering = unew * 180 / Mathf.PI;
+        //input.steering = Rnd.Range(-max_steering, max_steering);
         //Debug.Log($"k={ v_out.k } steering={input.steering} degrees");
         output.theta += model.runge_kutta_integration(model.compute_theta, dt, input, ref output);
 
@@ -459,10 +467,20 @@ public class RRTree
             return new Vector3(Xs[k], TreeHeight, Zs[k]);
     }
 
+    float[] toArr(Vector3 v)
+    {
+        float[] v2 = new float[3];
+        v[0] = v.x;
+        v[1] = v.y;
+        v[2] = v.z;
+        return v2;
+    }
+
     public float Build(IntPtr nativeLibraryPtr)
     {
+        
         //generate random points biased towards endP
-        int ret = Native.Invoke<int, GenerateCoordinates>(nativeLibraryPtr, Xs, Zs, K, startP.x, endP.x, startP.z, endP.z);
+        int ret = Native.Invoke<int, GenerateCoordinates3>(nativeLibraryPtr, Xs, Zs, K, toArr(startP), toArr(endP), toArr(areaStartP), toArr(areaEndP));
         Debug.Log("GenerateCoordinates ret = " + ret);
 
         int n_reached = 0;

@@ -160,11 +160,20 @@ public class RrtPlaner : MonoBehaviour
         return null;
     }
 
+    public void OnDrawGizmos()
+    {
+        Vector3 AreaStart = transform.TransformPoint(new Vector3(-5, 0, 5));
+        Gizmos.DrawSphere(AreaStart, 2);
+        Vector3 AreaEnd = transform.TransformPoint(new Vector3(5, 0, -5));
+        Gizmos.DrawSphere(AreaEnd, 2);
+    }
+
     public void CreateTree()
     {
-        rrt = new RRTree(StartP, EndP);
+        Vector3 AreaStart = transform.TransformPoint(new Vector3(-5, 0, 5));
+        Vector3 AreaEnd = transform.TransformPoint(new Vector3(5, 0, -5));
+        rrt = new RRTree(K_iterations, StartP, EndP, AreaStart, AreaEnd);
         rrt.Velocity = Velocity;
-        rrt.K = K_iterations;
         rrt.MAX_DIST_RAY = MAX_DIST_RAY;
         rrt.MIN_DIST_RAY = MIN_DIST_RAY;
         rrt.GOAL_THRESHOLD = GOAL_THRESHOLD;
@@ -282,6 +291,7 @@ public class RrtPlaner : MonoBehaviour
             
             if (rrt == null) return;
             // render RRT edges as lines
+            /*
             // foreach (Vector3 v in rrt.vertexes)
             //    Debug.DrawLine(v, v+new Vector3(0.001F, 0.001F, 0.001F), Color.green);
             Color c = new Color(Rnd.Range(0, 1), Rnd.Range(0, 1), Rnd.Range(0, 1));
@@ -294,6 +304,7 @@ public class RrtPlaner : MonoBehaviour
                 Debug.DrawLine(e.xe.value, e.xs.value, c);
                 k++;
             }
+            */
 
             // render the shortest path
             Vertex v = rrt.getShortestPath();//rrt.vertexes[RRTree.K/2];

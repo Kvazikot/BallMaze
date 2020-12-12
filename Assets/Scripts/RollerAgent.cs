@@ -23,6 +23,7 @@ public class RollerAgent : Agent
 	float m_LateralSpeed;
     float m_ForwardSpeed;
 	float agentRunSpeed;
+    private BehaviorType InferenceOnly;
 
     // Start is called before the first frame update
     void Start()
@@ -125,7 +126,9 @@ public class RollerAgent : Agent
         // If the Agent fell, zero its momentum
         this.rb.angularVelocity = Vector3.zero;
         this.rb.velocity = Vector3.zero;
-		area.Reset(transform);
+        BehaviorParameters param = this.GetComponent<BehaviorParameters>();
+        if( param.BehaviorType != InferenceOnly)
+            area.Reset(transform);
 		pc.targetWaypoint = null;
         // Move the target to a new spot
 
