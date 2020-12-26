@@ -38,7 +38,6 @@ Bторое есть дефекты в функции детектора кол�
 This project implements a path planning algorithm for a car-like robot that travels through a maze.
 
 Vladimir Baranov (vsbaranov83@gmail.com)
-homepage https://sites.google.com/site/midanedev/3d-labirint
 
 for Unity 2019.3.11f1
 
